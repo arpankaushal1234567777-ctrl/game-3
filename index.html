@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cut & Zero</title>
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --surface-2: #f5f5f7;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.14);
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #aeaeb2;
+      --accent-o: #0071e3;
+      --accent-green: #34c759;
+      --accent-red: #ff3b30;
+      --accent-orange: #ff9500;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(0,113,227,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 32px; animation: fadeUp 0.5s ease both; }
+    .eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--accent-o); margin-bottom: 8px;
+    }
+    .game-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      font-weight: 400; color: var(--text-primary);
+      letter-spacing: -0.02em; line-height: 1.05;
+    }
+    .game-title span { color: var(--accent-o); }
+
+    /* Card */
+    .card-shell {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+
+    /* Segmented */
+    .seg-group {
+      background: var(--surface-2);
+      border-radius: 10px;
+      padding: 3px;
+      display: flex;
+      gap: 2px;
+      border: 1px solid var(--border);
+    }
+    .seg-btn {
+      flex: 1; background: transparent; border: none;
+      border-radius: 8px; padding: 7px 12px;
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.18s;
+    }
+    .seg-btn.active {
+      background: var(--surface); color: var(--text-primary);
+      box-shadow: var(--shadow-sm); font-weight: 600;
+    }
+
+    /* Difficulty */
+    .diff-row { display: flex; gap: 8px; }
+    .diff-btn {
+      flex: 1; background: var(--surface-2);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 6px; font-family: inherit; font-size: 11.5px;
+      font-weight: 700; cursor: pointer; transition: all 0.18s;
+      text-align: center; color: var(--text-secondary); letter-spacing: 0.03em;
+    }
+    .diff-btn .di { display: block; font-size: 20px; margin-bottom: 4px; }
+    .diff-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+    .diff-btn.d-easy  { border-color: var(--accent-green);  background: rgba(52,199,89,0.06);  color: var(--accent-green); }
+    .diff-btn.d-medium{ border-color: var(--accent-orange); background: rgba(255,149,0,0.06); color: var(--accent-orange); }
+    .diff-btn.d-hard  { border-color: var(--accent-red);    background: rgba(255,59,48,0.06);  color: var(--accent-red); }
+
+    .diff-section { transition: opacity 0.25s, max-height 0.3s; overflow: hidden; max-height: 130px; }
+    .diff-section.hidden { opacity: 0; max-height: 0; pointer-events: none; }
+
+    /* Score */
+    .score-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+    .score-tile {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px; text-align: center;
+      transition: all 0.2s;
+    }
+    .score-tile.active-tile { background: #fff; box-shadow: var(--shadow-sm); border-color: var(--border-strong); }
+    .score-val {
+      font-family: 'DM Serif Display', serif; font-size: 2.2rem;
+      line-height: 1; color: var(--text-primary);
+    }
+    .score-val.x-c { color: var(--text-primary); }
+    .score-val.o-c { color: var(--accent-o); }
+    .score-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 2px; }
+    .draw-mid { text-align: center; }
+    .draw-num { font-family: 'DM Serif Display', serif; font-size: 1.3rem; color: var(--text-tertiary); }
+    .draw-lbl { font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); }
+
+    /* Turn Chip */
+    .turn-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 50px; padding: 6px 16px 6px 8px;
+      font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+      transition: all 0.22s;
+    }
+    .turn-chip.cx { background: rgba(29,29,31,0.05); border-color: rgba(29,29,31,0.14); color: var(--text-primary); }
+    .turn-chip.co { background: rgba(0,113,227,0.05); border-color: rgba(0,113,227,0.18); color: var(--accent-o); }
+    .turn-av {
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; font-family: 'DM Serif Display', serif;
+    }
+    .cx .turn-av { background: var(--text-primary); color: #fff; }
+    .co .turn-av { background: var(--accent-o); color: #fff; }
+
+    /* Board */
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .cell {
+      aspect-ratio: 1; background: var(--surface-2);
+      border: 1.5px solid var(--border); border-radius: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+    }
+    .cell:hover:not(.taken) {
+      background: var(--surface); border-color: var(--border-strong);
+      transform: scale(1.025); box-shadow: var(--shadow-sm);
+    }
+    .cell:active:not(.taken) { transform: scale(0.97); }
+    .cell.taken { cursor: default; }
+    .cell-sym {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 5.5vw, 2.5rem);
+      line-height: 1; opacity: 0; transform: scale(0.3);
+      transition: opacity 0.22s cubic-bezier(0.34,1.56,0.64,1), transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .cell-sym.show { opacity: 1; transform: scale(1); }
+    .cell.xc .cell-sym { color: var(--text-primary); }
+    .cell.oc .cell-sym { color: var(--accent-o); }
+    .cell.win-cell.xc { background: rgba(29,29,31,0.05); border-color: rgba(29,29,31,0.2); }
+    .cell.win-cell.oc { background: rgba(0,113,227,0.06); border-color: rgba(0,113,227,0.22); }
+
+    /* Buttons */
+    .btn-blue {
+      background: var(--accent-o); color: #fff; border: none;
+      border-radius: 980px; padding: 12px 24px; font-family: inherit;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.18s, transform 0.14s;
+    }
+    .btn-blue:hover { opacity: 0.86; }
+    .btn-blue:active { transform: scale(0.97); }
+
+    .btn-outline {
+      background: transparent; color: var(--accent-o);
+      border: 1.5px solid rgba(0,113,227,0.22); border-radius: 980px;
+      padding: 10px 22px; font-family: inherit; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: all 0.18s;
+    }
+    .btn-outline:hover { background: rgba(0,113,227,0.04); border-color: rgba(0,113,227,0.35); }
+
+    .btn-ghost-sm {
+      background: transparent; color: var(--text-tertiary); border: none;
+      padding: 8px 14px; font-family: inherit; font-size: 12.5px;
+      font-weight: 600; cursor: pointer; transition: color 0.18s; letter-spacing: 0.02em;
+    }
+    .btn-ghost-sm:hover { color: var(--text-secondary); }
+
+    /* Labels */
+    .sec-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+
+    /* Diff badge inline */
+    .dbadge {
+      display: inline-block; padding: 2px 9px; border-radius: 20px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .dbadge.easy   { background: rgba(52,199,89,0.1); color: var(--accent-green); }
+    .dbadge.medium { background: rgba(255,149,0,0.1); color: var(--accent-orange); }
+    .dbadge.hard   { background: rgba(255,59,48,0.1); color: var(--accent-red); }
+
+    /* Status */
+    .status { min-height: 22px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-tertiary); }
+    .status .win-x { color: var(--text-primary); }
+    .status .win-o { color: var(--accent-o); }
+
+    /* Thinking */
+    .dots { display: inline-flex; gap: 3px; align-items: center; }
+    .dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-o); animation: db 1.2s ease-in-out infinite; }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes db { 0%,80%,100%{transform:scale(0.55);opacity:0.35}40%{transform:scale(1);opacity:1} }
+
+    /* Divider */
+    .hr { height: 1px; background: var(--border); border-radius: 1px; }
+
+    /* Modal */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(22px) saturate(1.8);
+      -webkit-backdrop-filter: blur(22px) saturate(1.8);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.28s;
+    }
+    .modal-bg.show { opacity: 1; pointer-events: all; }
+    .modal-sheet {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.06);
+      padding: 44px 36px 32px; text-align: center;
+      width: 90%; max-width: 320px;
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.32s cubic-bezier(0.34,1.4,0.64,1);
+    }
+    .modal-bg.show .modal-sheet { transform: translateY(0) scale(1); }
+    .m-icon {
+      width: 60px; height: 60px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Serif Display', serif; font-size: 26px;
+      margin: 0 auto 18px;
+    }
+    .m-icon.xi { background: rgba(29,29,31,0.06); color: var(--text-primary); }
+    .m-icon.oi { background: rgba(0,113,227,0.07); color: var(--accent-o); }
+    .m-icon.di { background: rgba(0,0,0,0.04); font-size: 28px; }
+    .m-title {
+      font-family: 'DM Serif Display', serif; font-size: 1.65rem;
+      color: var(--text-primary); letter-spacing: -0.01em; margin-bottom: 5px;
+    }
+    .m-sub { font-size: 13px; color: var(--text-tertiary); font-weight: 500; margin-bottom: 26px; }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 460px) {
+      .card-shell { padding: 20px 16px; border-radius: 20px; }
+      .modal-sheet { padding: 36px 24px 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal-sheet">
+    <div class="m-icon" id="mIcon">🎉</div>
+    <div class="m-title" id="mTitle">Player X Wins</div>
+    <div class="m-sub" id="mSub">Well played!</div>
+    <button class="btn-blue w-100 mb-2" onclick="closeModalReset()">Play Again</button>
+    <button class="btn-ghost-sm w-100" onclick="closeModal()">View Board</button>
+  </div>
+</div>
+
+<!-- Page -->
+<div class="page">
+
+  <div class="header">
+    <h1 class="game-title">Cut &amp; <span>Zero</span></h1>
+  </div>
+
+  <div class="card-shell">
+    <div class="d-flex flex-column gap-3">
+
+      <!-- Mode -->
+      <div>
+        <div class="sec-label">Game Mode</div>
+        <div class="seg-group">
+          <button class="seg-btn active" id="btn2p" onclick="setMode('2p')">Two Players</button>
+          <button class="seg-btn" id="btnAI" onclick="setMode('ai')">vs CPU</button>
+        </div>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="diff-section hidden" id="diffSection">
+        <div class="sec-label d-flex align-items-center gap-2">
+          Difficulty <span class="dbadge easy" id="dbadge">Easy</span>
+        </div>
+        <div class="diff-row">
+          <button class="diff-btn d-easy" id="dEasy" onclick="setDiff('easy')">
+            <span class="di">🌱</span>Easy
+          </button>
+          <button class="diff-btn" id="dMedium" onclick="setDiff('medium')">
+            <span class="di">🔥</span>Medium
+          </button>
+          <button class="diff-btn" id="dHard" onclick="setDiff('hard')">
+            <span class="di">💀</span>Hard
+          </button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <!-- Score -->
+      <div class="score-row">
+        <div class="score-tile" id="tX">
+          <div class="score-val x-c" id="sX">0</div>
+          <div class="score-lbl">Player X</div>
+        </div>
+        <div class="draw-mid">
+          <div class="draw-num" id="sDraw">0</div>
+          <div class="draw-lbl">Draws</div>
+        </div>
+        <div class="score-tile" id="tO">
+          <div class="score-val o-c" id="sO">0</div>
+          <div class="score-lbl" id="p2lbl">Player O</div>
+        </div>
+      </div>
+
+      <!-- Turn -->
+      <div class="text-center">
+        <div class="turn-chip cx" id="turnChip">
+          <span class="turn-av" id="tAv">X</span>
+          <span id="tTxt">Player X's turn</span>
+        </div>
+      </div>
+
+      <!-- Board -->
+      <div class="board" id="board">
+        <div class="cell" onclick="cellClick(0)"><span class="cell-sym" id="c0"></span></div>
+        <div class="cell" onclick="cellClick(1)"><span class="cell-sym" id="c1"></span></div>
+        <div class="cell" onclick="cellClick(2)"><span class="cell-sym" id="c2"></span></div>
+        <div class="cell" onclick="cellClick(3)"><span class="cell-sym" id="c3"></span></div>
+        <div class="cell" onclick="cellClick(4)"><span class="cell-sym" id="c4"></span></div>
+        <div class="cell" onclick="cellClick(5)"><span class="cell-sym" id="c5"></span></div>
+        <div class="cell" onclick="cellClick(6)"><span class="cell-sym" id="c6"></span></div>
+        <div class="cell" onclick="cellClick(7)"><span class="cell-sym" id="c7"></span></div>
+        <div class="cell" onclick="cellClick(8)"><span class="cell-sym" id="c8"></span></div>
+      </div>
+
+      <!-- Status -->
+      <div class="status" id="status"></div>
+
+      <!-- Actions -->
+      <div class="d-flex gap-2 align-items-center">
+        <button class="btn-outline flex-fill" onclick="resetBoard()">New Round</button>
+        <button class="btn-ghost-sm" onclick="resetAll()">Reset Scores</button>
+      </div>
+
+    </div>
+  </div>
+
+  <p style="margin-top:24px;font-size:10.5px;color:var(--text-tertiary);letter-spacing:0.14em;text-transform:uppercase">
+    Bootstrap · Tailwind · Vanilla JS
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ── State ───────────────────────────────────────
+  let gs = Array(9).fill(null);   // game state board
+  let cur = 'X';
+  let over = false;
+  let mode = '2p';
+  let diff = 'easy';
+  let scores = { X: 0, O: 0, draw: 0 };
+  let busy = false;  // CPU thinking
+
+  const WINS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  const cells = document.querySelectorAll('.cell');
+
+  // ── Mode ────────────────────────────────────────
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btn2p').classList.toggle('active', m === '2p');
+    document.getElementById('btnAI').classList.toggle('active', m === 'ai');
+    document.getElementById('diffSection').classList.toggle('hidden', m === '2p');
+    document.getElementById('p2lbl').textContent = m === 'ai' ? 'CPU' : 'Player O';
+    resetAll();
+  }
+
+  // ── Difficulty ──────────────────────────────────
+  function setDiff(d) {
+    diff = d;
+    const map = { easy: 'dEasy', medium: 'dMedium', hard: 'dHard' };
+    Object.keys(map).forEach(k => {
+      document.getElementById(map[k]).className = 'diff-btn' + (k === d ? ` d-${k}` : '');
+    });
+    const badge = document.getElementById('dbadge');
+    badge.className = `dbadge ${d}`;
+    badge.textContent = d.charAt(0).toUpperCase() + d.slice(1);
+    resetBoard();
+  }
+
+  // ── Cell Click ──────────────────────────────────
+  function cellClick(i) {
+    if (over || gs[i] || busy) return;
+    if (mode === 'ai' && cur === 'O') return;
+    move(i, cur);
+    if (!over && mode === 'ai' && cur === 'O') runCPU();
+  }
+
+  function runCPU() {
+    busy = true;
+    setStatusThinking();
+    const delay = diff === 'easy' ? 380 : diff === 'medium' ? 620 : 880;
+    setTimeout(() => {
+      busy = false;
+      if (!over) {
+        const i = cpuPick();
+        if (i !== null) move(i, 'O');
+      }
+    }, delay);
+  }
+
+  // ── Move ────────────────────────────────────────
+  function move(i, player) {
+    gs[i] = player;
+    renderCell(i, player);
+    const win = findWin(gs);
+    if (win) {
+      endGame({ type: 'win', player, line: win });
+    } else if (gs.every(v => v)) {
+      endGame({ type: 'draw' });
+    } else {
+      cur = player === 'X' ? 'O' : 'X';
+      updateTurn();
+      clearStatus();
+    }
+  }
+
+  function renderCell(i, p) {
+    const cell = cells[i];
+    const sym = document.getElementById(`c${i}`);
+    sym.textContent = p === 'X' ? '✕' : '◯';
+    cell.classList.add(p === 'X' ? 'xc' : 'oc', 'taken');
+    requestAnimationFrame(() => sym.classList.add('show'));
+  }
+
+  function updateTurn() {
+    const chip = document.getElementById('turnChip');
+    const av = document.getElementById('tAv');
+    const txt = document.getElementById('tTxt');
+    chip.className = `turn-chip ${cur === 'X' ? 'cx' : 'co'}`;
+    av.textContent = cur;
+    const name = mode === 'ai' && cur === 'O' ? 'CPU' : `Player ${cur}`;
+    txt.textContent = `${name}'s turn`;
+  }
+
+  function setStatusThinking() {
+    document.getElementById('status').innerHTML =
+      `<span style="color:var(--accent-o)">CPU thinking <span class="dots"><span></span><span></span><span></span></span></span>`;
+  }
+
+  function clearStatus() { document.getElementById('status').innerHTML = ''; }
+
+  // ── Win ─────────────────────────────────────────
+  function findWin(b) {
+    for (const [a, bb, c] of WINS) {
+      if (b[a] && b[a] === b[bb] && b[a] === b[c]) return [a, bb, c];
+    }
+    return null;
+  }
+
+  function endGame(res) {
+    over = true;
+    if (res.type === 'draw') {
+      scores.draw++;
+      document.getElementById('sDraw').textContent = scores.draw;
+      document.getElementById('status').innerHTML = `<span style="color:var(--text-tertiary)">It's a draw</span>`;
+      showModal('draw');
+    } else {
+      const { player, line } = res;
+      scores[player]++;
+      line.forEach(i => cells[i].classList.add('win-cell'));
+      document.getElementById(`s${player}`).textContent = scores[player];
+      const name = mode === 'ai' && player === 'O' ? 'CPU' : `Player ${player}`;
+      const cls = player === 'X' ? 'win-x' : 'win-o';
+      document.getElementById('status').innerHTML = `<span class="${cls}">${name} wins</span>`;
+      document.getElementById(`t${player}`).classList.add('active-tile');
+      showModal(player);
+    }
+    document.getElementById('turnChip').style.opacity = '0.3';
+  }
+
+  // ── Modal ────────────────────────────────────────
+  function showModal(result) {
+    const icon = document.getElementById('mIcon');
+    const title = document.getElementById('mTitle');
+    const sub = document.getElementById('mSub');
+    if (result === 'draw') {
+      icon.textContent = '🤝'; icon.className = 'm-icon di';
+      title.textContent = "It's a Draw"; title.style.color = '';
+      sub.textContent = 'A perfectly even match.';
+    } else {
+      const name = mode === 'ai' && result === 'O' ? 'CPU' : `Player ${result}`;
+      icon.textContent = result === 'X' ? '✕' : '◯';
+      icon.className = `m-icon ${result === 'X' ? 'xi' : 'oi'}`;
+      title.textContent = `${name} Wins`;
+      title.style.color = result === 'X' ? 'var(--text-primary)' : 'var(--accent-o)';
+      const msgs = ['Well played!','Excellent move!','Brilliant!','Impressive!'];
+      sub.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    }
+    setTimeout(() => document.getElementById('modal').classList.add('show'), 680);
+  }
+
+  function closeModalReset() {
+    document.getElementById('modal').classList.remove('show');
+    setTimeout(resetBoard, 300);
+  }
+
+  function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+  // ── Reset ────────────────────────────────────────
+  function resetBoard() {
+    gs = Array(9).fill(null);
+    cur = 'X'; over = false; busy = false;
+    cells.forEach((cell, i) => {
+      cell.className = 'cell';
+      const s = document.getElementById(`c${i}`);
+      s.textContent = ''; s.classList.remove('show');
+    });
+    ['tX','tO'].forEach(id => document.getElementById(id).classList.remove('active-tile'));
+    clearStatus();
+    document.getElementById('turnChip').style.opacity = '1';
+    updateTurn();
+  }
+
+  function resetAll() {
+    scores = { X:0, O:0, draw:0 };
+    ['X','O'].forEach(p => document.getElementById(`s${p}`).textContent = '0');
+    document.getElementById('sDraw').textContent = '0';
+    resetBoard();
+  }
+
+  // ── CPU Logic ────────────────────────────────────
+
+  function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // Find a cell where player p has 2 in a row and the 3rd is empty (win or block)
+  function threatMove(p) {
+    for (const [a, b, c] of WINS) {
+      const vals = [gs[a], gs[b], gs[c]];
+      const idxs = [a, b, c];
+      if (vals.filter(v => v === p).length === 2 && vals.includes(null)) {
+        return idxs[vals.indexOf(null)];
+      }
+    }
+    return null;
+  }
+
+  // Minimax: scores a board state from O's perspective.
+  // lastPlayer = whoever just placed a piece (whose move triggered this call).
+  function minimax(b, lastPlayer, depth) {
+    const win = findWin(b);
+    if (win) {
+      // lastPlayer just won
+      return lastPlayer === 'O' ? { score: 10 - depth } : { score: depth - 10 };
+    }
+    if (b.every(v => v)) return { score: 0 }; // draw
+
+    const nextPlayer = lastPlayer === 'O' ? 'X' : 'O';
+    const moves = [];
+    b.forEach((v, i) => {
+      if (!v) {
+        b[i] = nextPlayer;
+        const r = minimax(b, nextPlayer, depth + 1);
+        b[i] = null;
+        moves.push({ index: i, score: r.score });
+      }
+    });
+
+    // O is maximiser, X is minimiser
+    if (nextPlayer === 'O') {
+      return moves.reduce((best, m) => m.score > best.score ? m : best, { score: -Infinity, index: null });
+    } else {
+      return moves.reduce((best, m) => m.score < best.score ? m : best, { score: Infinity, index: null });
+    }
+  }
+
+  function cpuPick() {
+    const empty = gs.map((v, i) => v ? null : i).filter(v => v !== null);
+    if (!empty.length) return null;
+
+    // ── EASY: purely random, no strategy ──────────
+    if (diff === 'easy') {
+      return rnd(empty);
+    }
+
+    // ── MEDIUM: win if can, block if must, else random ──
+    if (diff === 'medium') {
+      const win = threatMove('O');
+      if (win !== null) return win;
+      const blk = threatMove('X');
+      if (blk !== null) return blk;
+      return rnd(empty);
+    }
+
+    // ── HARD: perfect minimax, always optimal ──────
+    const b = gs.slice();
+    const moves = [];
+    empty.forEach(i => {
+      b[i] = 'O';
+      const r = minimax(b, 'O', 0);
+      b[i] = null;
+      moves.push({ index: i, score: r.score });
+    });
+    return moves.reduce((best, m) => m.score > best.score ? m : best, { score: -Infinity, index: null }).index;
+  }
+
+  // ── Init ─────────────────────────────────────────
+  updateTurn();
+</script>
+</body>
+</html>
